@@ -3,29 +3,34 @@ package naming
 import (
 	"context"
 	"fmt"
+	"github.com/ZuoFuhong/grpc-naming-monica/api"
+	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/resolver"
 	"log"
+	"strings"
 	"time"
 )
 
 func init() {
-	resolver.Register(newEtcdBuilder())
+	resolver.Register(newMonicaBuilder())
 }
+
+var mlogger = grpclog.Component("monica-resolver")
 
 const (
 	// 同步实例列表的周期
 	syncNSInterval = 5 * time.Second
 )
 
-type etcdBuilder struct{}
+type monicaBuilder struct{}
 
-func newEtcdBuilder() resolver.Builder {
-	return &etcdBuilder{}
+func newMonicaBuilder() resolver.Builder {
+	return &monicaBuilder{}
 }
 
-func (erb *etcdBuilder) Build(target resolver.Target, cc resolver.ClientConn, _ resolver.BuildOptions) (resolver.Resolver, error) {
+func (m *monicaBuilder) Build(target resolver.Target, cc resolver.ClientConn, _ resolver.BuildOptions) (resolver.Resolver, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	r := &etcdResolver{
+	r := &monicaResolver{
 		target: target,
 		cc:     cc,
 		ctx:    ctx,
@@ -36,28 +41,28 @@ func (erb *etcdBuilder) Build(target resolver.Target, cc resolver.ClientConn, _ 
 	return r, nil
 }
 
-func (erb *etcdBuilder) Scheme() string {
-	return "etcd"
+func (m *monicaBuilder) Scheme() string {
+	return "monica"
 }
 
-type etcdResolver struct {
+type monicaResolver struct {
 	target resolver.Target
 	cc     resolver.ClientConn
 	ctx    context.Context
 	cancel context.CancelFunc
 }
 
-func (r *etcdResolver) ResolveNow(resolver.ResolveNowOptions) {
-	log.Println("etcd resolver resolve now")
+func (r *monicaResolver) ResolveNow(resolver.ResolveNowOptions) {
+	log.Println("monica resolver resolve now")
 }
 
-func (r *etcdResolver) Close() {
-	log.Println("etcd resolver close")
+func (r *monicaResolver) Close() {
+	log.Println("monica resolver close")
 	r.cancel()
 }
 
 // 轮询并更新服务的实例
-func (r *etcdResolver) watcher() {
+func (r *monicaResolver) watcher() {
 	r.updateState()
 	ticker := time.NewTicker(syncNSInterval)
 	for {
@@ -72,43 +77,29 @@ func (r *etcdResolver) watcher() {
 }
 
 // 更新实例列表
-func (r *etcdResolver) updateState() {
+func (r *monicaResolver) updateState() {
 	instances := r.getInstances()
 	newAddrs := make([]resolver.Address, 0)
 	for _, ins := range instances {
-		addr := resolver.Address{Addr: fmt.Sprintf("%s:%d", ins.ip, ins.port)}
+		addr := resolver.Address{Addr: fmt.Sprintf("%s:%d", ins.IP, ins.Port)}
 		// 通过属性存储权重
 		addr = SetAddrInfo(addr, AddrInfo{
-			Weight: ins.weight,
+			Weight: ins.Weight,
 		})
 		newAddrs = append(newAddrs, addr)
 	}
 	_ = r.cc.UpdateState(resolver.State{Addresses: newAddrs})
 }
 
-type Instance struct {
-	ip     string
-	port   int
-	weight int
-}
-
 // 获取服务可用的实例
-func (r *etcdResolver) getInstances() []*Instance {
-	return []*Instance{
-		{
-			ip:     "127.0.0.1",
-			port:   1024,
-			weight: 100,
-		},
-		{
-			ip:     "127.0.0.1",
-			port:   1025,
-			weight: 50,
-		},
-		{
-			ip:     "127.0.0.1",
-			port:   1026,
-			weight: 25,
-		},
+func (r *monicaResolver) getInstances() []*api.InstanceNode {
+	ns := r.target.URL.Host
+	sname := strings.TrimPrefix(r.target.URL.Path, "/")
+	// 调用 Monica API
+	nodes, err := api.Fetch(ns, sname)
+	if err != nil {
+		mlogger.Errorf("fetch instance error: %v", err)
+		return []*api.InstanceNode{}
 	}
+	return nodes
 }

@@ -1,4 +1,4 @@
-module github.com/ZuoFuhong/grpc-naming-etcd
+module github.com/ZuoFuhong/grpc-naming-monica
 
 go 1.18
 

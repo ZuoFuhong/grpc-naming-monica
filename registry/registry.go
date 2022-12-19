@@ -9,11 +9,16 @@ import (
 
 var logger = grpclog.Component("monica-registy")
 
+const DefaultHeartBeat = 5 // 默认健康上报间隔
+
 type Registry struct {
 	cfg *Config
 }
 
 func NewRegistry(cfg *Config) *Registry {
+	if cfg.HeartBeat == 0 {
+		cfg.HeartBeat = DefaultHeartBeat
+	}
 	return &Registry{cfg: cfg}
 }
 

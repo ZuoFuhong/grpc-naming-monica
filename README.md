@@ -1,6 +1,7 @@
 ## Monica naming SDK
 
-gRPC [命名解析](https://github.com/grpc/grpc/blob/master/doc/naming.md)和[负载均衡](https://github.com/grpc/grpc/blob/master/doc/load-balancing.md)的扩展实现，使用[monica](https://github.com/ZuoFuhong/monica) 注册中心.
+gRPC [命名解析](https://github.com/grpc/grpc/blob/master/doc/naming.md)和[负载均衡](https://github.com/grpc/grpc/blob/master/doc/load-balancing.md)的扩展实现，
+使用[monica](https://github.com/ZuoFuhong/monica) 服务注册中心，支持**加权轮询**负载均衡策略。
 
 ### Usage
 

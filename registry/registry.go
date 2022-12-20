@@ -3,11 +3,9 @@ package registry
 import (
 	"fmt"
 	"github.com/ZuoFuhong/grpc-naming-monica/api"
-	"google.golang.org/grpc/grpclog"
+	"log"
 	"time"
 )
-
-var logger = grpclog.Component("monica-registy")
 
 const DefaultHeartBeat = 5 // 默认健康上报间隔
 
@@ -36,7 +34,7 @@ func (s *Registry) Register() error {
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("register error: %s", err.Error())
+		return fmt.Errorf("service register error: %s", err.Error())
 	}
 	s.renew()
 	return nil
@@ -54,7 +52,7 @@ func (s *Registry) renew() {
 				IP:          s.cfg.IP,
 			})
 			if err != nil {
-				logger.Errorf("renew failed, err: %v", err)
+				log.Println("service renew error:", err.Error())
 			}
 			time.Sleep(tick)
 		}
@@ -69,5 +67,5 @@ func (s *Registry) Deregister() error {
 		ServiceName: s.cfg.ServiceName,
 		IP:          s.cfg.IP,
 	})
-	return fmt.Errorf("deregister error: %s", err.Error())
+	return fmt.Errorf("service deregister error: %s", err.Error())
 }

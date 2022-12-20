@@ -2,7 +2,6 @@ package registry
 
 import (
 	"testing"
-	"time"
 )
 
 func Test_Register(t *testing.T) {
@@ -16,6 +15,7 @@ func Test_Register(t *testing.T) {
 		Metadata:    "[]",
 		HeartBeat:   5,
 	})
-	regIns.Register()
-	time.Sleep(1 * time.Minute)
+	if err := regIns.Register(); err != nil {
+		t.Fatal(err)
+	}
 }

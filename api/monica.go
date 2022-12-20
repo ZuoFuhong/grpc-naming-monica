@@ -4,12 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"google.golang.org/grpc/grpclog"
 	"io/ioutil"
 	"net/http"
 )
-
-var logger = grpclog.Component("monica-api")
 
 const (
 	registerUrl   = "http://monica.oa.com:1024/api/v1/register"
@@ -25,16 +22,9 @@ func Register(req *RegisterReq) error {
 	if err != nil {
 		return err
 	}
-	resp, err := http.Post(registerUrl, "application/json", bytes.NewBuffer(bodyBytes))
-	if err != nil {
+	if _, err := unifiedPostRequest(registerUrl, bodyBytes); err != nil {
 		return err
 	}
-	defer resp.Body.Close()
-	respBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-	logger.Infof("monica.register resp: %v", string(respBytes))
 	return nil
 }
 
@@ -44,16 +34,9 @@ func Renew(req *RenewReq) error {
 	if err != nil {
 		return err
 	}
-	resp, err := http.Post(renewUrl, "application/json", bytes.NewBuffer(bodyBytes))
-	if err != nil {
+	if _, err := unifiedPostRequest(renewUrl, bodyBytes); err != nil {
 		return err
 	}
-	defer resp.Body.Close()
-	respBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-	logger.Infof("monica.renew resp: %v", string(respBytes))
 	return nil
 }
 
@@ -63,16 +46,9 @@ func Deregister(req *DeregisterReq) error {
 	if err != nil {
 		return err
 	}
-	resp, err := http.Post(deregisterUrl, "application/json", bytes.NewBuffer(bodyBytes))
-	if err != nil {
+	if _, err := unifiedPostRequest(deregisterUrl, bodyBytes); err != nil {
 		return err
 	}
-	defer resp.Body.Close()
-	respBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-	logger.Infof("monica.deregister resp: %v", string(respBytes))
 	return nil
 }
 
@@ -91,13 +67,23 @@ func Fetch(ns, sname string) ([]*InstanceNode, error) {
 
 // Poll 获取服务实例（长轮询）
 func Poll(ns, sname string) ([]*InstanceNode, error) {
-	resp, err := http.Get(fmt.Sprintf(pollUrl, ns, sname))
+	// 目前不支持
+	return []*InstanceNode{}, nil
+}
+
+// 统一请求
+func unifiedPostRequest(reqUrl string, reqBody []byte) ([]byte, error) {
+	resp, err := http.Post(reqUrl, "application/json", bytes.NewBuffer(reqBody))
 	if err != nil {
 		return nil, err
 	}
-	fetchRsp := new(FetchResp)
-	if err := json.NewDecoder(resp.Body).Decode(fetchRsp); err != nil {
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("http request failed, statusCode = %d", resp.StatusCode)
+	}
+	defer resp.Body.Close()
+	rspBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
 		return nil, err
 	}
-	return fetchRsp.Data, nil
+	return rspBody, nil
 }

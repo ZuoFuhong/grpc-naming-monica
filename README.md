@@ -29,6 +29,10 @@ if err := regIns.Register(); err != nil {
 服务消费方要访问某个服务时，它通过 “服务发现组件” 向服务注册中心发出服务名称查询，名称将解析为一个或多个 IP 地址，同时缓存并定期刷新目标服务地址列表.
 
 ```go
+import (
+    _ "github.com/ZuoFuhong/grpc-naming-monica"
+)
+
 conn, err := grpc.Dial("monica://Production/go_wallet_manage_svr")
 if err != nil {
     t.Fatal(err)
@@ -44,6 +48,8 @@ conn, err := grpc.Dial("monica://Test/go_wallet_manage_svr",
 	grpc.WithDefaultServiceConfig(`{"loadBalancingPolicy":"weighted_round_robin"}`)
 )
 ```
+
+注意：加权轮询策略不可独立使用，必须和 monica 命名解析一起使用。
 
 ## License
 

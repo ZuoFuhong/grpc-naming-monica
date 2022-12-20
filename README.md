@@ -51,6 +51,6 @@ conn, err := grpc.Dial("monica://Test/go_wallet_manage_svr",
 
 注意：加权轮询策略不可独立使用，必须和 monica 命名解析一起使用。
 
-## License
+### License
 
 This project is licensed under the [Apache 2.0 license](https://github.com/ZuoFuhong/grpc-naming-monica/blob/master/LICENSE).
